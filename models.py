@@ -1,8 +1,28 @@
-from sqlalchemy import Column, String, Boolean, Date, Text, Numeric, Integer, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, String, Boolean, Date, Text, Numeric, Integer, ForeignKey, TIMESTAMP, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
 import uuid
+import enum
+
+# Definicion de los ENUMs
+class GeneroEnum(enum.Enum):
+    masculino = "masculino"
+    femenino = "femenino"
+    no_binario = "no_binario"
+    prefiero_no_decir = "prefiero_no_decir"
+
+class EstadoPublicacionEnum(enum.Enum):
+    activo = "activo"
+    pausado = "pausado"
+    cerrado = "cerrado"
+
+class PreferenciaGeneroEnum(enum.Enum):
+    masculino = "masculino"
+    femenino = "femenino"
+    no_binario = "no_binario"
+    indiferente = "indiferente"
+
 
 class User(Base):
     __tablename__ = "users"
@@ -10,11 +30,11 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre = Column(String)
     apellido = Column(String)
-    dni = Column(String, unique=True)
+    dni = Column(String)
     email = Column(String, unique=True)
     password = Column(String)
     fecha_nacimiento = Column(Date)
-    genero = Column(String)
+    genero = Column(Enum(GeneroEnum, name="genero_enum", create_type=False))
     foto_perfil_url = Column(String)
     descripcion = Column(Text)
     preferencias = Column(Text)
@@ -35,16 +55,16 @@ class Publicacion(Base):
     titulo = Column(String)
     descripcion = Column(Text)
     direccion = Column(String)
-    estado = Column(String)
+    estado = Column(Enum(EstadoPublicacionEnum, name="estado_publicacion_enum", create_type=False))
     precio = Column(Numeric)
-    preferencia_genero = Column(String)
+    preferencia_genero = Column(Enum(PreferenciaGeneroEnum, name="preferencia_genero_enum", create_type=False))
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
 
     propietario = relationship("User", back_populates="publicaciones")
     fotos = relationship("PublicacionFoto", back_populates="publicacion")
-    postulaciones = relationship("Postulacion", back_populates="publicacion")
+    postulaciones = relationship("Postulacion", back_populates="postulaciones")
 
 
 class PublicacionFoto(Base):
