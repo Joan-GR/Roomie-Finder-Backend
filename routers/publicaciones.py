@@ -42,3 +42,34 @@ def obtener_publicacion(publicacion_id: str, db: Session = Depends(get_db)):
     if not publicacion:
         raise HTTPException(status_code=404, detail="Publicacion no encontrada")
     return publicacion
+
+@router.put("/{publicacion_id}", response_model=PublicacionResponse)
+def actualizar_publicacion(publicacion_id: str, publicacion: PublicacionCreate, db: Session = Depends(get_db)):
+    pub = db.query(Publicacion).filter(Publicacion.id == publicacion_id).first()
+    if not pub:
+        raise HTTPException(status_code=404, detail="Publicacion no encontrada")
+
+    pub.titulo = publicacion.titulo
+    pub.descripcion = publicacion.descripcion
+    pub.direccion = publicacion.direccion
+    pub.estado = publicacion.estado
+    pub.precio = publicacion.precio
+    pub.preferencia_genero = publicacion.preferencia_genero
+    pub.updated_at = datetime.now()
+
+    db.commit()
+    db.refresh(pub)
+    return pub
+
+
+@router.delete("/{publicacion_id}")
+def desactivar_publicacion(publicacion_id: str, db: Session = Depends(get_db)):
+    pub = db.query(Publicacion).filter(Publicacion.id == publicacion_id).first()
+    if not pub:
+        raise HTTPException(status_code=404, detail="Publicacion no encontrada")
+
+    pub.activo = False
+    pub.updated_at = datetime.now()
+
+    db.commit()
+    return {"message": "Publicacion desactivada correctamente"}

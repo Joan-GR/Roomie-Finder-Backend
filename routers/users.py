@@ -39,9 +39,45 @@ def crear_usuario(user: UserCreate, db: Session = Depends(get_db)):
     return nuevo_usuario
 
 
+@router.get("/", response_model=UserResponse)
+def listar_publicaciones(db: Session = Depends(get_db)):
+    return db.query(User).filter(User.activo == True).all()
+
 @router.get("/{user_id}", response_model=UserResponse)
 def obtener_usuario(user_id: str, db: Session = Depends(get_db)):
     usuario = db.query(User).filter(User.id == user_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return usuario
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+def actualizar_usuario(user_id: str, user: UserCreate, db: Session = Depends(get_db)):
+    usuario = db.query(User).filter(User.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario.nombre = user.nombre
+    usuario.apellido = user.apellido
+    usuario.dni = user.dni
+    usuario.email = user.email
+    usuario.fecha_nacimiento = user.fecha_nacimiento
+    usuario.genero = user.genero
+    usuario.updated_at = datetime.now()
+
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+
+@router.delete("/{user_id}")
+def desactivar_usuario(user_id: str, db: Session = Depends(get_db)):
+    usuario = db.query(User).filter(User.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario.activo = False
+    usuario.updated_at = datetime.now()
+
+    db.commit()
+    return {"message": "Usuario desactivado correctamente"}
