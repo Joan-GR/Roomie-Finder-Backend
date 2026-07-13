@@ -64,7 +64,7 @@ class Publicacion(Base):
 
     propietario = relationship("User", back_populates="publicaciones")
     fotos = relationship("PublicacionFoto", back_populates="publicacion")
-    postulaciones = relationship("Postulacion", back_populates="postulaciones")
+    postulaciones = relationship("Postulacion", back_populates="publicacion")
 
 
 class PublicacionFoto(Base):
