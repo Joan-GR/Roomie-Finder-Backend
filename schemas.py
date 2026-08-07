@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
@@ -12,6 +12,11 @@ class UserCreate(BaseModel):
     dni: str
     email: EmailStr
     password: str
+    @field_validator('password')
+    def password_max_length(cls, v):
+        if len(v) > 72:
+            raise ValueError('La contraseña no puede tener más de 72 caracteres')
+        return v
     fecha_nacimiento: date
     genero: GeneroEnum
 
