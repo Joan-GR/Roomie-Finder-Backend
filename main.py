@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, fotos, postulaciones, publicaciones, users
+from routers import auth, fotos, postulaciones, publicaciones, uploads, users
 
 app = FastAPI(title="Roomie Finder API")
 
@@ -29,6 +29,7 @@ app.include_router(users.router)
 app.include_router(publicaciones.router)
 app.include_router(postulaciones.router)
 app.include_router(fotos.router)
+app.include_router(uploads.router)
 
 
 @app.get("/")
