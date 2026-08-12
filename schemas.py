@@ -23,6 +23,8 @@ class UserCreate(BaseModel):
     password: str
     fecha_nacimiento: date
     genero: GeneroEnum
+    descripcion: Optional[str] = None
+    preferencias: Optional[str] = None
 
     _check_password = field_validator("password")(_validar_password)
 
