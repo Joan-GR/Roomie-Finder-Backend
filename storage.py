@@ -34,9 +34,13 @@ async def subir_imagen(archivo: UploadFile, carpeta: str) -> str:
     if not contenido:
         raise HTTPException(status_code=400, detail="El archivo esta vacio")
 
-    resultado = cloudinary.uploader.upload(
-        contenido,
-        folder=f"roomie-finder/{carpeta}",
-        resource_type="image",
-    )
+    try:
+        resultado = cloudinary.uploader.upload(
+            contenido,
+            folder=f"roomie-finder/{carpeta}",
+            resource_type="image",
+        )
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=502, detail=f"Error al subir la imagen a Cloudinary: {e}")
+
     return resultado["secure_url"]
