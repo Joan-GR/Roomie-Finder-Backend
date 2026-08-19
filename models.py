@@ -111,6 +111,20 @@ class Postulacion(Base):
     estado = relationship("Estado", back_populates="postulaciones", lazy="selectin")
 
 
+class Mensaje(Base):
+    __tablename__ = "mensajes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    emisor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    receptor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    contenido = Column(Text)
+    leido = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP)
+
+    emisor = relationship("User", foreign_keys=[emisor_id])
+    receptor = relationship("User", foreign_keys=[receptor_id])
+
+
 class Sesion(Base):
     __tablename__ = "sesiones"
 

@@ -161,6 +161,30 @@ class PostulacionResponse(BaseModel):
         from_attributes = True
 
 
+class MensajeCreate(BaseModel):
+    receptor_id: UUID
+    contenido: str = Field(min_length=1, max_length=5000)
+
+
+class MensajeResponse(BaseModel):
+    id: UUID
+    emisor_id: UUID
+    receptor_id: UUID
+    contenido: str
+    leido: bool
+    created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class ConversacionResponse(BaseModel):
+    usuario_id: UUID
+    ultimo_mensaje: str
+    ultimo_mensaje_fecha: Optional[datetime]
+    no_leidos: int
+
+
 class SesionResponse(BaseModel):
     id: UUID
     user_id: Optional[UUID]
