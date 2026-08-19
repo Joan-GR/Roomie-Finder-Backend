@@ -66,6 +66,23 @@ def listar_publicaciones(
     )
 
 
+@router.get("/usuario/{propietario_id}", response_model=list[PublicacionResponse])
+def listar_publicaciones_de_usuario(
+    propietario_id: UUID,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(Publicacion)
+        .filter(Publicacion.propietario_id == propietario_id, Publicacion.activo == True)  # noqa: E712
+        .order_by(Publicacion.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 @router.get("/{publicacion_id}", response_model=PublicacionResponse)
 def obtener_publicacion(publicacion_id: UUID, db: Session = Depends(get_db)):
     return _obtener_publicacion(publicacion_id, db)

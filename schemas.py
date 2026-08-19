@@ -23,6 +23,7 @@ class UserCreate(BaseModel):
     password: str
     fecha_nacimiento: date
     genero: GeneroEnum
+    foto_perfil_url: Optional[str] = None
     descripcion: Optional[str] = None
     preferencias: Optional[str] = None
 

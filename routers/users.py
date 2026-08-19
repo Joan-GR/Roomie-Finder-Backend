@@ -26,6 +26,7 @@ def crear_usuario(user: UserCreate, db: Session = Depends(get_db)):
         password=hash_password(user.password),
         fecha_nacimiento=user.fecha_nacimiento,
         genero=user.genero,
+        foto_perfil_url=user.foto_perfil_url,
         descripcion=user.descripcion,
         preferencias=user.preferencias,
         activo=True,

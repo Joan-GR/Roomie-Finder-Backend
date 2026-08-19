@@ -31,6 +31,20 @@ def mis_postulaciones(
     return db.query(Postulacion).filter(Postulacion.postulante_id == usuario.id).all()
 
 
+@router.get("/usuario/{postulante_id}", response_model=list[PostulacionResponse])
+def listar_postulaciones_de_usuario(
+    postulante_id: UUID,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(get_current_user),
+):
+    # Las postulaciones de otra persona son informacion privada (a que publicaciones
+    # se postulo), asi que solo el propio usuario puede consultarlas.
+    if usuario.id != postulante_id:
+        raise HTTPException(status_code=403, detail="Solo podes ver tus propias postulaciones")
+
+    return db.query(Postulacion).filter(Postulacion.postulante_id == postulante_id).all()
+
+
 @router.post("/", response_model=PostulacionResponse, status_code=201)
 def crear_postulacion(
     postulacion: PostulacionCreate,
