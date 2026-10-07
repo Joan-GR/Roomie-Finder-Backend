@@ -80,6 +80,14 @@ class LoginResponse(BaseModel):
     expira_en: datetime
 
 
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(min_length=1)
+
+
+class FacebookLoginRequest(BaseModel):
+    access_token: str = Field(min_length=1)
+
+
 class PublicacionCreate(BaseModel):
     titulo: str = Field(min_length=1)
     descripcion: str = Field(min_length=1)

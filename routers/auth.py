@@ -5,7 +5,14 @@ from uuid import uuid4
 
 from database import get_db
 from models import Sesion, User
-from schemas import LoginRequest, LoginResponse, UserResponse
+from oauth import verificar_access_token_facebook, verificar_id_token_google
+from schemas import (
+    FacebookLoginRequest,
+    GoogleLoginRequest,
+    LoginRequest,
+    LoginResponse,
+    UserResponse,
+)
 from security import (
     DURACION_SESION,
     bearer_scheme,
@@ -19,19 +26,7 @@ from security import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=LoginResponse)
-def login(datos: LoginRequest, db: Session = Depends(get_db)):
-    usuario = db.query(User).filter(User.email == datos.email).first()
-
-    # Se verifica el password aunque el usuario no exista para no filtrar por
-    # el tiempo de respuesta que emails estan registrados.
-    password_ok = verify_password(datos.password, usuario.password if usuario else None)
-    if not usuario or not password_ok:
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
-
-    if not usuario.activo:
-        raise HTTPException(status_code=403, detail="Cuenta desactivada")
-
+def _crear_sesion(db: Session, usuario: User) -> LoginResponse:
     token = generar_token()
     ahora = utcnow()
 
@@ -48,11 +43,83 @@ def login(datos: LoginRequest, db: Session = Depends(get_db)):
     db.refresh(sesion)
 
     # El token en claro solo se devuelve aca; en la base queda unicamente su hash.
-    return LoginResponse(
-        token=token,
-        user_id=usuario.id,
-        expira_en=sesion.expira_en,
+    return LoginResponse(token=token, user_id=usuario.id, expira_en=sesion.expira_en)
+
+
+def _obtener_o_crear_usuario_oauth(
+    db: Session, email: str, nombre: str | None, apellido: str | None, foto_url: str | None
+) -> User:
+    usuario = db.query(User).filter(User.email == email).first()
+    if usuario:
+        if not usuario.activo:
+            raise HTTPException(status_code=403, detail="Cuenta desactivada")
+        return usuario
+
+    # Google y Facebook verifican el email antes de entregarlo, asi que confiamos
+    # en el y creamos la cuenta. Los datos de perfil (dni, fecha_nacimiento, genero)
+    # quedan vacios: el usuario los completa despues con PUT /users/{id}.
+    ahora = utcnow()
+    usuario = User(
+        id=uuid4(),
+        nombre=nombre or "",
+        apellido=apellido or "",
+        dni=None,
+        email=email,
+        password=None,
+        fecha_nacimiento=None,
+        genero=None,
+        foto_perfil_url=foto_url,
+        activo=True,
+        created_at=ahora,
+        updated_at=ahora,
     )
+    db.add(usuario)
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+
+@router.post("/login", response_model=LoginResponse)
+def login(datos: LoginRequest, db: Session = Depends(get_db)):
+    usuario = db.query(User).filter(User.email == datos.email).first()
+
+    # Se verifica el password aunque el usuario no exista para no filtrar por
+    # el tiempo de respuesta que emails estan registrados.
+    password_ok = verify_password(datos.password, usuario.password if usuario else None)
+    if not usuario or not password_ok:
+        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+
+    if not usuario.activo:
+        raise HTTPException(status_code=403, detail="Cuenta desactivada")
+
+    return _crear_sesion(db, usuario)
+
+
+@router.post("/google", response_model=LoginResponse)
+def login_google(datos: GoogleLoginRequest, db: Session = Depends(get_db)):
+    payload = verificar_id_token_google(datos.id_token)
+    usuario = _obtener_o_crear_usuario_oauth(
+        db,
+        email=payload["email"],
+        nombre=payload.get("given_name"),
+        apellido=payload.get("family_name"),
+        foto_url=payload.get("picture"),
+    )
+    return _crear_sesion(db, usuario)
+
+
+@router.post("/facebook", response_model=LoginResponse)
+def login_facebook(datos: FacebookLoginRequest, db: Session = Depends(get_db)):
+    perfil = verificar_access_token_facebook(datos.access_token)
+    nombre, _, apellido = perfil.get("name", "").partition(" ")
+    usuario = _obtener_o_crear_usuario_oauth(
+        db,
+        email=perfil["email"],
+        nombre=nombre or None,
+        apellido=apellido or None,
+        foto_url=None,
+    )
+    return _crear_sesion(db, usuario)
 
 
 @router.post("/logout")
