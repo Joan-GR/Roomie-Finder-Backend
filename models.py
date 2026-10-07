@@ -118,6 +118,9 @@ class Mensaje(Base):
     emisor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     receptor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     contenido = Column(Text)
+    adjunto_url = Column(String)
+    adjunto_nombre = Column(String)
+    adjunto_tipo = Column(String)
     leido = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP)
 

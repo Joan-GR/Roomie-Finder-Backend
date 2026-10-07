@@ -32,6 +32,9 @@ def enviar_mensaje(
         emisor_id=usuario.id,
         receptor_id=mensaje.receptor_id,
         contenido=mensaje.contenido,
+        adjunto_url=mensaje.adjunto_url,
+        adjunto_nombre=mensaje.adjunto_nombre,
+        adjunto_tipo=mensaje.adjunto_tipo,
         leido=False,
         created_at=utcnow(),
     )
@@ -61,9 +64,10 @@ def listar_conversaciones(
         if otro_id not in conversaciones:
             # Como ya viene ordenado desc, el primer mensaje que aparece por cada
             # "otro_id" es el mas reciente de esa conversacion.
+            preview = m.contenido or (f"[archivo] {m.adjunto_nombre or ''}".strip())
             conversaciones[otro_id] = ConversacionResponse(
                 usuario_id=otro_id,
-                ultimo_mensaje=m.contenido,
+                ultimo_mensaje=preview,
                 ultimo_mensaje_fecha=m.created_at,
                 no_leidos=0,
             )

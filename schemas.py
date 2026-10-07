@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
@@ -171,14 +171,26 @@ class PostulacionResponse(BaseModel):
 
 class MensajeCreate(BaseModel):
     receptor_id: UUID
-    contenido: str = Field(min_length=1, max_length=5000)
+    contenido: Optional[str] = Field(default=None, max_length=5000)
+    adjunto_url: Optional[str] = None
+    adjunto_nombre: Optional[str] = None
+    adjunto_tipo: Optional[str] = None
+
+    @model_validator(mode="after")
+    def requiere_contenido_o_adjunto(self) -> "MensajeCreate":
+        if not (self.contenido and self.contenido.strip()) and not self.adjunto_url:
+            raise ValueError("El mensaje necesita texto o un archivo adjunto")
+        return self
 
 
 class MensajeResponse(BaseModel):
     id: UUID
     emisor_id: UUID
     receptor_id: UUID
-    contenido: str
+    contenido: Optional[str]
+    adjunto_url: Optional[str]
+    adjunto_nombre: Optional[str]
+    adjunto_tipo: Optional[str]
     leido: bool
     created_at: Optional[datetime]
 
