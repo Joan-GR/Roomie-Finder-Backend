@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from uuid import uuid4
@@ -6,6 +6,7 @@ from uuid import uuid4
 from database import get_db
 from models import Sesion, User
 from oauth import verificar_access_token_facebook, verificar_id_token_google
+from rate_limit import verificar_limite
 from schemas import (
     FacebookLoginRequest,
     GoogleLoginRequest,
@@ -80,7 +81,9 @@ def _obtener_o_crear_usuario_oauth(
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(datos: LoginRequest, db: Session = Depends(get_db)):
+def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    verificar_limite(request, "login", limite=5, ventana_segundos=15 * 60)
+
     usuario = db.query(User).filter(User.email == datos.email).first()
 
     # Se verifica el password aunque el usuario no exista para no filtrar por
@@ -96,7 +99,9 @@ def login(datos: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=LoginResponse)
-def login_google(datos: GoogleLoginRequest, db: Session = Depends(get_db)):
+def login_google(datos: GoogleLoginRequest, request: Request, db: Session = Depends(get_db)):
+    verificar_limite(request, "oauth", limite=20, ventana_segundos=15 * 60)
+
     payload = verificar_id_token_google(datos.id_token)
     usuario = _obtener_o_crear_usuario_oauth(
         db,
@@ -109,7 +114,9 @@ def login_google(datos: GoogleLoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/facebook", response_model=LoginResponse)
-def login_facebook(datos: FacebookLoginRequest, db: Session = Depends(get_db)):
+def login_facebook(datos: FacebookLoginRequest, request: Request, db: Session = Depends(get_db)):
+    verificar_limite(request, "oauth", limite=20, ventana_segundos=15 * 60)
+
     perfil = verificar_access_token_facebook(datos.access_token)
     nombre, _, apellido = perfil.get("name", "").partition(" ")
     usuario = _obtener_o_crear_usuario_oauth(

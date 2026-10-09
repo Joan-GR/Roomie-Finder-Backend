@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from uuid import UUID, uuid4
 
 from database import get_db
 from models import User
+from rate_limit import verificar_limite
 from schemas import UserCreate, UserResponse, UserUpdate
 from security import get_current_user, hash_password, utcnow
 
@@ -11,7 +12,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", response_model=UserResponse, status_code=201)
-def crear_usuario(user: UserCreate, db: Session = Depends(get_db)):
+def crear_usuario(user: UserCreate, request: Request, db: Session = Depends(get_db)):
+    verificar_limite(request, "registro", limite=5, ventana_segundos=60 * 60)
+
     existe = db.query(User).filter(User.email == user.email).first()
     if existe:
         raise HTTPException(status_code=400, detail="El email ya está registrado")
